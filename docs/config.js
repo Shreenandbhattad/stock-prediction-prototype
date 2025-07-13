@@ -4,8 +4,8 @@ const config = {
         API_BASE_URL: 'http://localhost:8000'
     },
     production: {
-        // Replace with your deployed API URL (e.g., Heroku, AWS, etc.)
-        API_BASE_URL: 'https://your-api-domain.herokuapp.com'
+        // Railway backend URL
+        API_BASE_URL: 'https://stock-prediction-prototype-production.up.railway.app'
     }
 };
 

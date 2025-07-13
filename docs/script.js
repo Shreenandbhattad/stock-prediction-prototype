@@ -1,6 +1,11 @@
 // API Configuration
 const API_BASE_URL = window.APP_CONFIG ? window.APP_CONFIG.API_BASE_URL : 'http://localhost:8000';
 
+// Debug logging
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('Current hostname:', window.location.hostname);
+console.log('APP_CONFIG:', window.APP_CONFIG);
+
 // Global variables
 let currentStock = null;
 let technicalData = null;
@@ -60,8 +65,21 @@ async function analyzeStock() {
 // Fetch technical analysis data
 async function fetchTechnicalAnalysis(symbol) {
     try {
-        const response = await fetch(`${API_BASE_URL}/stocks/${symbol}`);
+        console.log(`Fetching technical analysis for ${symbol} from ${API_BASE_URL}/stocks/${symbol}`);
+        const response = await fetch(`${API_BASE_URL}/stocks/${symbol}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        console.log('Technical analysis response:', data);
         
         if (data.error) {
             throw new Error(data.error);
@@ -71,6 +89,9 @@ async function fetchTechnicalAnalysis(symbol) {
         return data;
     } catch (error) {
         console.error('Error fetching technical analysis:', error);
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+            throw new Error('Cannot connect to API server. Please check if the server is running.');
+        }
         throw error;
     }
 }
