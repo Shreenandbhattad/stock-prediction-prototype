@@ -1,0 +1,35 @@
+{
+  "project_name": "Stock Prediction Prototype",
+  "version": "0.1.0",
+  "settings": {
+    "api": {
+      "host": "0.0.0.0",
+      "port": 8000
+    },
+    "database": {
+      "type": "postgres",
+      "url": "postgresql://username:password@localhost:5432/stock_prediction"
+    },
+    "cache": {
+      "redis_url": "redis://localhost:6379"
+    },
+    "logging": {
+      "level": "INFO",
+      "file": "logs/app.log"
+    },
+    "report": {
+      "cache_duration": 3600,
+      "pdf_generation": true
+    },
+    "model": {
+      "cache_duration": 86400,
+      "retrain_interval": 604800,
+      "confidence_threshold": 0.6
+    },
+    "risk_management": {
+      "max_risk_score": 80,
+      "min_confidence_for_buy": 0.7,
+      "min_confidence_for_sell": 0.7
+    }
+  }
+}

@@ -1,0 +1,316 @@
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+.metric-card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+
+.metric-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.recommendation-badge {
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-align: center;
+    min-width: 120px;
+    display: inline-block;
+}
+
+.recommendation-badge.BUY {
+    background-color: #d4edda;
+    color: #155724;
+    border: 2px solid #28a745;
+}
+
+.recommendation-badge.SELL {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 2px solid #dc3545;
+}
+
+.recommendation-badge.HOLD {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 2px solid #ffc107;
+}
+
+.price-change.positive {
+    color: #28a745;
+}
+
+.price-change.negative {
+    color: #dc3545;
+}
+
+.signal-item {
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+.signal-item.bullish {
+    border-left-color: #28a745;
+    background-color: #d4edda;
+}
+
+.signal-item.bearish {
+    border-left-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+.signal-item.neutral {
+    border-left-color: #ffc107;
+    background-color: #fff3cd;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    border: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    border: none;
+    vertical-align: middle;
+}
+
+.table-responsive {
+    border-radius: 8px;
+}
+
+.prediction-card {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.prediction-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.confidence-bar {
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(255,255,255,0.3);
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background-color: #fff;
+    transition: width 0.5s ease;
+}
+
+.indicator-positive {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.indicator-negative {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.indicator-neutral {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    color: #6c757d;
+}
+
+.form-control {
+    border: 1px solid #ced4da;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.text-muted {
+    color: #6c757d !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+}
+
+.model-info {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+}
+
+.model-info:hover {
+    background-color: #e9ecef;
+    transform: translateX(5px);
+}
+
+.model-info h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.model-info p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 1rem;
+}
+
+.price-target {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.price-target h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.confidence-level {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.model-performance {
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.model-performance h6 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.performance-metric {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.performance-value {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.performance-value.negative {
+    color: #dc3545;
+}
+
+@media (max-width: 768px) {
+    .metric-card {
+        margin-bottom: 1rem;
+    }
+    
+    .recommendation-badge {
+        margin-top: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .model-info {
+        padding: 0.75rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}

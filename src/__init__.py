@@ -1,0 +1,3 @@
+"""
+Stock Prediction Prototype Package
+"""
