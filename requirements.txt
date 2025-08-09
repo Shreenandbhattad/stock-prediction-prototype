@@ -13,6 +13,9 @@ scipy
 # Machine Learning - minimal set
 scikit-learn
 xgboost
+statsmodels
+tensorflow
+pmdarima
 
 # Technical Analysis - simplified
 ta

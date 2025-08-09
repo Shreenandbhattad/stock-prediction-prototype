@@ -253,6 +253,49 @@ class FundamentalAnalysis:
         
         return min(score, 9)  # Cap at 9
     
+    def get_historical_fundamentals(self) -> pd.DataFrame:
+        """
+        Calculates historical fundamental ratios from quarterly reports.
+        """
+        try:
+            # Fetch quarterly data
+            q_financials = self.stock.quarterly_financials
+            q_balance_sheet = self.stock.quarterly_balance_sheet
+
+            if q_financials.empty or q_balance_sheet.empty:
+                return pd.DataFrame()
+
+            # Transpose to have dates as rows
+            q_financials = q_financials.T
+            q_balance_sheet = q_balance_sheet.T
+
+            # Convert index to datetime
+            q_financials.index = pd.to_datetime(q_financials.index)
+            q_balance_sheet.index = pd.to_datetime(q_balance_sheet.index)
+
+            # Combine dataframes
+            df = pd.concat([q_financials, q_balance_sheet], axis=1)
+
+            # Calculate ratios
+            results = pd.DataFrame(index=df.index)
+
+            # Profitability
+            results['Net_Margin'] = df['Net Income'] / df['Total Revenue']
+
+            # Leverage
+            results['Debt_to_Equity'] = df.get('Total Debt', 0) / df.get('Total Stockholder Equity', 1)
+
+            # Liquidity
+            results['Current_Ratio'] = df.get('Total Current Assets', 0) / df.get('Total Current Liabilities', 1)
+
+            # Fill NaNs and infinities
+            results = results.replace([np.inf, -np.inf], np.nan).fillna(0)
+
+            return results
+
+        except Exception:
+            return pd.DataFrame()
+
     def get_comprehensive_analysis(self) -> Dict[str, Any]:
         """Get comprehensive fundamental analysis"""
         return {
@@ -295,3 +338,20 @@ def get_fundamental_summary(symbol: str) -> Dict[str, Any]:
             'error': str(e),
             'symbol': symbol
         }
+
+def get_historical_fundamental_data(symbol: str) -> pd.DataFrame:
+    """
+    Get a DataFrame of historical fundamental data for a stock.
+
+    Args:
+        symbol: Stock symbol
+
+    Returns:
+        DataFrame with historical fundamental data.
+    """
+    try:
+        analyzer = FundamentalAnalysis(symbol)
+        return analyzer.get_historical_fundamentals()
+    except Exception as e:
+        print(f"Error in historical fundamental analysis for {symbol}: {e}")
+        return pd.DataFrame()
