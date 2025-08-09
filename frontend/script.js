@@ -313,6 +313,12 @@ function updatePredictionResults() {
                                 <span>RMSE:</span>
                                 <span class="performance-value">${rmse.toFixed(2)}</span>
                             </div>
+                            <div class="performance-metric">
+                                <small class="text-muted">
+                                    <i class="fas fa-cogs me-1"></i>
+                                    ${Object.entries(results.best_params).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                                </small>
+                            </div>
                         </div>
                     </div>
                 `;

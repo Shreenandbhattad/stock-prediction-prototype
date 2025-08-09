@@ -26,6 +26,10 @@ class MarketStackConfig(BaseModel):
     api_key: str = Field(default_factory=lambda: os.getenv("MARKETSTACK_API_KEY", "102b76768338d536bf46fb894114cf29"))
     base_url: str = Field(default_factory=lambda: os.getenv("MARKETSTACK_BASE_URL", "http://api.marketstack.com/v1"))
 
+class StockDataConfig(BaseModel):
+    api_key: str = Field(default_factory=lambda: os.getenv("STOCKDATA_API_KEY", "Z1DdN1M3sTyR0CBfcuhd4bL30nr2KC7BLr7Yyap1"))
+    base_url: str = Field(default_factory=lambda: os.getenv("STOCKDATA_BASE_URL", "https://api.stockdata.org/v1"))
+
 class ModelConfig(BaseModel):
     cache_duration: int = Field(default_factory=lambda: int(os.getenv("MODEL_CACHE_DURATION", "86400")))
     retrain_interval: int = Field(default_factory=lambda: int(os.getenv("RETRAIN_INTERVAL", "604800")))
@@ -61,6 +65,7 @@ class Settings(BaseModel):
     redis: RedisConfig = Field(default_factory=RedisConfig)
     api: APIConfig = Field(default_factory=APIConfig)
     marketstack: MarketStackConfig = Field(default_factory=MarketStackConfig)
+    stockdata: StockDataConfig = Field(default_factory=StockDataConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     analysis: AnalysisConfig = Field(default_factory=AnalysisConfig)
     report: ReportConfig = Field(default_factory=ReportConfig)

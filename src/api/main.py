@@ -3,9 +3,9 @@ Main FastAPI application to run the stock prediction service.
 """
 
 from fastapi import FastAPI, HTTPException
-from src.data.marketstack import marketstack_client
+from src.data.stockdata_client import stockdata_client
 from src.analysis.technical_indicators import calculate_all_indicators, get_technical_summary
-from src.analysis.fundamental import get_fundamental_summary
+from src.analysis.fundamental import get_fundamental_summary, get_historical_fundamental_data
 from src.prediction.ml_models import StockPredictor, create_ensemble_prediction, generate_recommendation
 import pandas as pd
 
@@ -18,7 +18,7 @@ def get_stock_analysis(symbol: str):
     Endpoint to get stock analysis for a given symbol
     """
     # Fetch stock data
-    stock_data = marketstack_client.get_stock_data(symbol)
+    stock_data = stockdata_client.get_stock_data(symbol)
     if stock_data.empty:
         raise HTTPException(status_code=404, detail="Stock data not found")
     
@@ -50,23 +50,60 @@ def predict_stock_price(symbol: str, days: int = 30):
     Endpoint to predict future stock prices for a given symbol
     """
     try:
-        # Fetch stock data and calculate indicators
-        stock_data = marketstack_client.get_stock_data(symbol)
-        if stock_data.empty:
+        # 1. Fetch Price Data
+        price_data = stockdata_client.get_stock_data(symbol)
+        if price_data.empty:
             raise HTTPException(status_code=404, detail="Stock data not found")
         
-        indicators = calculate_all_indicators(stock_data)
+        # 2. Calculate Technical Indicators
+        indicators = calculate_all_indicators(price_data)
+
+        # 3. Fetch Fundamental Data
+        fundamental_data = get_historical_fundamental_data(symbol)
+
+        # 4. Fetch Sentiment Data
+        sentiment_data = stockdata_client.get_sentiment_data(symbol)
+
+        # 5. Merge All Data Sources
+        # Start with indicators
+        combined_data = indicators
+
+        # Merge fundamental data
+        if not fundamental_data.empty:
+            combined_data.index = pd.to_datetime(combined_data.index).tz_localize(None) # Ensure naive
+            fundamental_data.index = pd.to_datetime(fundamental_data.index).tz_localize(None) # Ensure naive
+            combined_data = pd.merge_asof(
+                left=combined_data.sort_index(),
+                right=fundamental_data.sort_index(),
+                left_index=True,
+                right_index=True,
+                direction='backward'
+            )
+
+        # Merge sentiment data
+        if not sentiment_data.empty:
+            sentiment_data.index = pd.to_datetime(sentiment_data.index).tz_localize(None) # Ensure naive
+            combined_data = pd.merge_asof(
+                left=combined_data.sort_index(),
+                right=sentiment_data.sort_index(),
+                left_index=True,
+                right_index=True,
+                direction='backward'
+            )
+
+        # Forward-fill any missing values after merges
+        combined_data.fillna(method='ffill', inplace=True)
 
         # Prepare features and train models
         predictor = StockPredictor()
-        X, y = predictor.prepare_features(indicators)
+        X, y = predictor.prepare_features(combined_data)
         training_results = predictor.train_models(X, y)
         
         # Predict future prices
-        future_predictions = predictor.predict_future(indicators, days=days)
+        future_predictions = predictor.predict_future(combined_data, days=days)
         
         # Create ensemble prediction
-        ensemble_result = create_ensemble_prediction(future_predictions)
+        ensemble_result = create_ensemble_prediction(future_predictions, training_results)
 
         # Current price
         current_price = indicators.iloc[-1]['close']
