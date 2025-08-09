@@ -36,11 +36,10 @@ The Stock Prediction Prototype is a full-stack financial analysis system that co
 
 ### Data Sources
 
-**Primary Market Data**: Twelve Data API
+**Primary Market Data**: StockData.org API
 **Supplementary Data**: Yahoo Finance (yfinance)
-**Company Fundamentals**: Financial statement data
-**Economic Data**: Interest rates, inflation, GDP growth
-**News Sentiment**: Company-specific news analysis
+**Company Fundamentals**: Financial statement data from yfinance
+**News Sentiment**: News sentiment data from StockData.org
 
 ## Core Features
 
@@ -195,6 +194,8 @@ The system generates trading recommendations based on:
 
 ### Local Development Setup
 
+The application now uses a two-step process: training and serving.
+
 1. **Clone the repository**:
 ```bash
 git clone https://github.com/shreenandbhattad/stock-prediction-prototype.git
@@ -209,13 +210,24 @@ pip install -r requirements.txt
 3. **Configure environment variables**:
 ```bash
 cp .env.template .env
-# Edit .env with your API keys and database credentials
+# Edit .env with your API keys, especially STOCKDATA_API_KEY
 ```
 
-4. **Start the application**:
+4. **Train a Model (First time & for new stocks)**:
+Before you can get predictions, you must train and save a model for each stock symbol.
+```bash
+python train_models.py AAPL
+# Or for another symbol:
+# python train_models.py TSLA
+```
+This will fetch all necessary data, train the ensemble of models, and save the result to `trained_models/AAPL.pkl`.
+
+5. **Start the application**:
+Once models are trained, start the server.
 ```bash
 python run_full_app.py
 ```
+The server will now load the pre-trained models for predictions.
 
 ### Production Deployment
 

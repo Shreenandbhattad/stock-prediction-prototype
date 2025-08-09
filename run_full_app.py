@@ -22,6 +22,7 @@ def run_app():
     
     # Start API server
     print("📡 Starting API server...")
+    api_log_file = open("api.log", "w")
     api_process = subprocess.Popen([
         sys.executable, 
         "-m", "uvicorn", 
@@ -29,7 +30,7 @@ def run_app():
         "--host", "127.0.0.1", 
         "--port", "8000",
         "--reload"
-    ])
+    ], stdout=api_log_file, stderr=subprocess.STDOUT)
     
     # Wait a bit for API to start
     time.sleep(3)

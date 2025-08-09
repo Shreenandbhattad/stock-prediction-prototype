@@ -35,11 +35,11 @@ def get_stock_analysis(symbol: str):
     Endpoint to get stock analysis for a given symbol
     """
     try:
-        from src.data.stockdata_client import stockdata_client
+        from src.data.yfinance_client import get_stock_data as get_yfinance_data
         from src.analysis.technical_indicators import calculate_all_indicators, get_technical_summary
         
         # Fetch stock data
-        stock_data = stockdata_client.get_stock_data(symbol)
+        stock_data = get_yfinance_data(symbol)
         if stock_data.empty:
             raise HTTPException(status_code=404, detail="Stock data not found")
         
@@ -75,67 +75,58 @@ def get_company_analysis(symbol: str):
 @app.get("/predict/{symbol}", summary="Predict stock price", tags=["Prediction"])
 def predict_stock_price(symbol: str, days: int = 30):
     """
-    Endpoint to predict future stock prices for a given symbol
+    Endpoint to predict future stock prices for a given symbol using a pre-trained model.
     """
     try:
-        from src.data.stockdata_client import stockdata_client
+        from src.data.yfinance_client import get_stock_data as get_yfinance_data
         from src.analysis.technical_indicators import calculate_all_indicators
-        from src.analysis.fundamental import get_historical_fundamental_data
         from src.prediction.ml_models import StockPredictor, create_ensemble_prediction, generate_recommendation
 
-        # 1. Fetch Price Data
-        price_data = stockdata_client.get_stock_data(symbol)
+        # 1. Load the pre-trained model
+        model_path = f"trained_models/{symbol.upper()}.pkl"
+        try:
+            predictor = StockPredictor.load(model_path)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Model for {symbol} not found. Please run the training script first.")
+
+        # 2. Fetch latest data for prediction
+        # We need enough data to calculate all features (e.g., rolling windows, lags)
+        # Fetching 100 days should be safe.
+        price_data = get_yfinance_data(symbol, days=100)
         if price_data.empty:
-            raise HTTPException(status_code=404, detail="Stock data not found")
+            raise HTTPException(status_code=404, detail="Could not fetch recent stock data for prediction.")
         
-        # 2. Calculate Technical Indicators
         indicators = calculate_all_indicators(price_data)
 
-        # 3. Fetch Fundamental Data
-        fundamental_data = get_historical_fundamental_data(symbol)
+        # We don't need to fetch fundamental/sentiment data here as the model
+        # was trained on historical data. For a real-time prediction, we'd
+        # need to supply the *current* fundamental/sentiment data.
+        # For this prototype, we'll proceed with the features available from price.
 
-        # 4. Fetch Sentiment Data
-        sentiment_data = stockdata_client.get_sentiment_data(symbol)
-
-        # 5. Merge All Data Sources
-        combined_data = indicators
-        if not fundamental_data.empty:
-            combined_data.index = pd.to_datetime(combined_data.index).tz_localize(None)
-            fundamental_data.index = pd.to_datetime(fundamental_data.index).tz_localize(None)
-            combined_data = pd.merge_asof(combined_data.sort_index(), fundamental_data.sort_index(), left_index=True, right_index=True, direction='backward')
-
-        if not sentiment_data.empty:
-            sentiment_data.index = pd.to_datetime(sentiment_data.index).tz_localize(None)
-            combined_data = pd.merge_asof(combined_data.sort_index(), sentiment_data.sort_index(), left_index=True, right_index=True, direction='backward')
-
-        combined_data.fillna(method='ffill', inplace=True)
-
-        # Prepare features and train models
-        predictor = StockPredictor()
-        X, y = predictor.prepare_features(combined_data)
-        training_results = predictor.train_models(X, y)
+        # 3. Predict future prices
+        future_predictions = predictor.predict_future(indicators, days=days)
         
-        # Predict future prices
-        future_predictions = predictor.predict_future(combined_data, days=days)
-        
-        # Create ensemble prediction
-        ensemble_result = create_ensemble_prediction(future_predictions, training_results)
+        # 4. Create ensemble prediction
+        ensemble_result = create_ensemble_prediction(future_predictions, predictor.training_results)
 
-        # Current price
+        # 5. Generate recommendation
         current_price = indicators.iloc[-1]['close']
-
-        # Generate recommendation
-        recommendation = generate_recommendation(current_price, 
-                                                 ensemble_result.get('ensemble_prediction', current_price), 
-                                                 ensemble_result.get('confidence', 0.5))
+        recommendation = generate_recommendation(
+            current_price,
+            ensemble_result.get('ensemble_prediction', current_price),
+            ensemble_result.get('confidence', 0.5)
+        )
 
         return {
             "symbol": symbol,
-            "training_results": training_results,
+            "training_results": predictor.training_results,
             "future_predictions": future_predictions,
             "ensemble_prediction": ensemble_result,
             "recommendation": recommendation,
-            "current_price": current_price
+            "current_price": current_price,
+            "notes": "Prediction from pre-trained model."
         }
     except Exception as e:
+        print("!!! CAUGHT EXCEPTION IN PREDICT ENDPOINT !!!")
+        traceback.print_exc()
         return {"error": str(e), "symbol": symbol}

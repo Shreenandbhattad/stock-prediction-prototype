@@ -11,6 +11,8 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
 from typing import Dict, Tuple, List, Any
 import warnings
+import joblib
+import os
 warnings.filterwarnings('ignore')
 
 try:
@@ -66,8 +68,9 @@ class StockPredictor:
         # Add parameter grids for GridSearchCV
         self.param_grids = {
             'random_forest': {
-                'n_estimators': [50, 100],
-                'max_depth': [5, 10]
+                'n_estimators': [50, 100, 150],
+                'max_depth': [5, 10, 20],
+                'min_samples_leaf': [1, 2, 4]
             },
             'svr': {
                 'C': [0.1, 1, 10],
@@ -75,7 +78,7 @@ class StockPredictor:
             },
             'xgboost': {
                 'n_estimators': [50, 100],
-                'max_depth': [3, 5],
+                'max_depth': [3, 5, 7],
                 'learning_rate': [0.05, 0.1]
             }
         }
@@ -88,6 +91,44 @@ class StockPredictor:
             'lstm': 'LSTM Neural Network - Deep learning for time series patterns',
             'arima': 'ARIMA - Statistical time series forecasting model'
         }
+
+    def save(self, filepath: str, training_results: Dict[str, Any]):
+        """Saves the trained models, scaler, and results to a file."""
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        # Save the important parts of the predictor
+        joblib.dump({
+            'models': self.models,
+            'scaler': self.scaler,
+            'lstm_scaler': self.lstm_scaler,
+            'lstm_model': self.lstm_model,
+            'arima_model': self.arima_model,
+            'training_results': training_results # Save the results too
+        }, filepath)
+        print(f"Predictor saved to {filepath}")
+
+    @classmethod
+    def load(cls, filepath: str):
+        """Loads a trained predictor from a file."""
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"No saved model found at {filepath}")
+
+        data = joblib.load(filepath)
+
+        # Create a new predictor instance
+        predictor = cls()
+
+        # Load the saved state
+        predictor.models = data['models']
+        predictor.scaler = data['scaler']
+        predictor.lstm_scaler = data['lstm_scaler']
+        predictor.lstm_model = data['lstm_model']
+        predictor.arima_model = data['arima_model']
+        predictor.training_results = data.get('training_results', {}) # Load results
+        predictor.is_fitted = True
+
+        print(f"Predictor loaded from {filepath}")
+        return predictor
         
     def prepare_features(self, df: pd.DataFrame, target_col: str = 'close') -> Tuple[pd.DataFrame, pd.Series]:
         """
@@ -121,11 +162,11 @@ class StockPredictor:
         df['Volume_Change'] = df['volume'].pct_change()
         
         # Add rolling statistics
-        df['Price_Volatility'] = df[target_col].rolling(window=20).std()
-        df['Volume_SMA'] = df['volume'].rolling(window=20).mean()
+        df['Price_Volatility'] = df[target_col].rolling(window=10).std()
+        df['Volume_SMA'] = df['volume'].rolling(window=10).mean()
         
         # Add lag features
-        for lag in [1, 2, 3, 5, 10]:
+        for lag in [1, 2, 3, 5]:
             df[f'Price_Lag_{lag}'] = df[target_col].shift(lag)
             df[f'Volume_Lag_{lag}'] = df['volume'].shift(lag)
         
@@ -135,7 +176,7 @@ class StockPredictor:
             'Price_Volatility', 'Volume_SMA'
         ])
         
-        for lag in [1, 2, 3, 5, 10]:
+        for lag in [1, 2, 3, 5]:
             feature_columns.extend([f'Price_Lag_{lag}', f'Volume_Lag_{lag}'])
         
         # Select features that exist in the dataframe
@@ -182,6 +223,7 @@ class StockPredictor:
         # Train each model
         for model_name, model in self.models.items():
             try:
+                print(f"    - Tuning {model_name}...")
                 best_params = {}
                 if model_name in self.param_grids:
                     # Perform GridSearchCV for models with a parameter grid
@@ -190,7 +232,7 @@ class StockPredictor:
                         param_grid=self.param_grids[model_name],
                         cv=tscv,
                         scoring='neg_mean_squared_error',
-                        n_jobs=-1  # Use all available cores
+                        n_jobs=-1  # Use all available cores for offline training
                     )
                     grid_search.fit(X_train_scaled, y_train)
 
@@ -226,7 +268,9 @@ class StockPredictor:
         # Train LSTM model if TensorFlow is available
         if TENSORFLOW_AVAILABLE:
             try:
-                lstm_results = self.train_lstm_model(df, target_col)
+                # We need the original dataframe for this, so we have to pass it
+                # For now, let's pass `y` as it contains the target series
+                lstm_results = self.train_lstm_model(y.to_frame(name='close'), 'close')
                 results['lstm'] = lstm_results
             except Exception as e:
                 results['lstm'] = {'error': str(e)}
@@ -234,7 +278,7 @@ class StockPredictor:
         # Train ARIMA model if statsmodels is available
         if STATSMODELS_AVAILABLE:
             try:
-                arima_results = self.train_arima_model(df[target_col])
+                arima_results = self.train_arima_model(y)
                 results['arima'] = arima_results
             except Exception as e:
                 results['arima'] = {'error': str(e)}
@@ -281,17 +325,19 @@ class StockPredictor:
         if not self.is_fitted:
             raise ValueError("Models must be trained first")
         
-        # Get the latest data point
-        latest_data = df.iloc[-1:].copy()
+        # Prepare features for the entire dataframe to get the latest row with all features
+        X_full, _ = self.prepare_features(df.copy())
+
+        if X_full.empty:
+            return {"error": "Not enough data to generate features for prediction."}
+
+        X_latest = X_full.iloc[-1:]
+        X_scaled = self.scaler.transform(X_latest)
         
         predictions = {}
         
         for model_name, model in self.models.items():
             try:
-                # Prepare features for the latest data point
-                X_latest = latest_data[[col for col in latest_data.columns if col != 'close']].fillna(0)
-                X_scaled = self.scaler.transform(X_latest)
-                
                 # Make prediction
                 pred = model.predict(X_scaled)[0]
                 

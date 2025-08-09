@@ -122,7 +122,7 @@ async function getPrediction() {
         document.getElementById('predictionResults').innerHTML = `
             <div class="alert alert-danger">
                 <i class="fas fa-exclamation-triangle me-2"></i>
-                Error getting prediction: ${error.message}
+                <strong>Error Getting Prediction:</strong> Could not connect to the backend server. Please ensure the server is running and check the logs for errors.
             </div>
         `;
     } finally {
@@ -313,12 +313,6 @@ function updatePredictionResults() {
                                 <span>RMSE:</span>
                                 <span class="performance-value">${rmse.toFixed(2)}</span>
                             </div>
-                            <div class="performance-metric">
-                                <small class="text-muted">
-                                    <i class="fas fa-cogs me-1"></i>
-                                    ${Object.entries(results.best_params).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                                </small>
-                            </div>
                         </div>
                     </div>
                 `;
@@ -345,6 +339,20 @@ function updatePredictionResults() {
         </div>
     `;
     
+    // Add sentiment data warning if not used
+    if (predictionData.sentiment_data_used === false) {
+        html += `
+            <div class="col-12 mt-2">
+                <div class="alert alert-warning small p-2">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> Sentiment data could not be loaded. Predictions are based on price and fundamental data only.
+                </div>
+            </div>
+        `;
+    }
+
+    html += `</div>`; // Close the inner row
+
     container.innerHTML = html;
     
     // Create performance chart
