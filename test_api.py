@@ -1,22 +1,30 @@
-"""
-Simple test API to diagnose server issues
-"""
-from fastapi import FastAPI
-import uvicorn
+import requests
+import json
 
-app = FastAPI(title="Stock Prediction Test API")
+def test_predict_endpoint(symbol="AAPL"):
+    """
+    Makes a direct request to the /predict endpoint to test the backend.
+    """
+    print(f"--- Testing /predict/{symbol} endpoint ---")
+    url = f"http://localhost:8000/predict/{symbol}"
+    try:
+        response = requests.get(url, timeout=30)
 
-@app.get("/")
-def read_root():
-    return {"message": "Stock Prediction API is running!", "status": "healthy"}
+        print(f"Status Code: {response.status_code}")
+        response.raise_for_status() # Raise an exception for bad status codes
 
-@app.get("/health")
-def health_check():
-    return {"status": "healthy", "message": "API is working"}
+        response_json = response.json()
+        print("Response JSON:")
+        print(json.dumps(response_json, indent=2))
+
+        # Check for key fields
+        assert "ensemble_prediction" in response_json
+        assert "recommendation" in response_json
+        print("\n--- Backend Test Succeeded ---")
+
+    except Exception as e:
+        print(f"\n--- Backend Test FAILED ---")
+        print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    print("Starting test API server...")
-    print("Visit: http://localhost:8000")
-    print("API docs: http://localhost:8000/docs")
-    
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    test_predict_endpoint()
